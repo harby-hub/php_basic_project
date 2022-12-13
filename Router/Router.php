@@ -154,7 +154,7 @@ class Router {
             $reflectionController = new \ReflectionClass( $match [ 'class' ] ) ;
             foreach ( $reflectionController -> getAttributes( Parameters::class ) as $injectAttribute ) foreach ( $injectAttribute -> newInstance( ) -> injects( ) as $Attributekey => $Attributevalue ) $class -> $Attributekey = $Attributevalue ;
             foreach ( $reflectionController -> getMethod( $match[ 'method' ] ) -> getAttributes( Agreements::class ) as $injectParams ) foreach ( $injectParams -> newInstance( ) -> injects( ) as $paramskey => $paramsvalue ) $match[ 'params' ][ $paramskey ] = $paramsvalue ;
-            responce( $class -> { $match [ 'method' ] } ( ... ( $match[ 'params' ] ?? [ ] ) ) ) ;
+            \App\Support\Response::json( $class -> { $match [ 'method' ] } ( ... ( $match[ 'params' ] ?? [ ] ) ) ) ;
         } ;
     }
 

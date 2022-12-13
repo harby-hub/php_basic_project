@@ -1,8 +1,9 @@
 <?php namespace App\Integration ;
 
-use GuzzleHttp\Client;
 use App\Inject\Parameters;
-use GuzzleHttp\TransferStats;
+use App\Support\Curl;
+
+use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpClient\Exception\TransportException;
@@ -12,60 +13,95 @@ class slave {
     public array $data = [ 1 , 2 , 3 ] ;
 }
 
-// http://localhost:800/api/Cities/?id%5B0%5D=1&id%5B1%5D=2&first=2
-// http://localhost:800/api/Cities?id%5B0%5D=1&id%5B1%5D=2&first=2
-
 #[ Parameters( [ 'slave' => slave::class ] ) ]
 class Wrapper{
 
     public slave $slave ;
 
-    public function fopen( string $url , array $query = [ ] ) : array {
-        $url = sprintf( '%s?%s', $url , http_build_query( $query ) ) ;
-        $fp = fopen( $url , 'r' );
+    public function fopen( string $method , string $url , array $query = [ ] ) : array {
+        $options = array(
+            'http' => array(
+                'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+                'method'  => strtoupper( $method ) ,
+                'content' => http_build_query( $query )
+            )
+        );
+        $mad = @stream_context_create( $options );
+        $fp  = @fopen( \App\Support\Url::build( $url , $query ) , 'rb' , false , $mad );
         try {
             $respone = ( array ) json_decode( stream_get_contents( $fp ) , true ) ;
             fclose( $fp ) ;
-            return $respone + [ 'url' => $url ] ;;
-        } catch (\Throwable $th) {
-            return [$th]  ;
-        } finally {
+            return $respone ;
+        } catch ( \Throwable $th ) {
+            return [
+                ( string ) $th -> getMessage( )  ,
+                $th -> getTrace( )  ,
+                ( string ) $th ,
+            ]  ;
         }
     }
 
-    public function curl( string $url , array $query = [ ] ) : array {
-        $url = sprintf( '%s?%s', $url , http_build_query( $query ) ) ;
-        $ch = curl_init( ) ;
-        curl_setopt( $ch , CURLOPT_RETURNTRANSFER  , true ) ;
-        curl_setopt( $ch , CURLOPT_URL             , $url ) ;
-        curl_setopt( $ch , CURLOPT_SSH_COMPRESSION , true ) ;
-        curl_setopt_array( $ch , [
-            CURLOPT_RETURNTRANSFER => true ,
-            CURLOPT_URL            => $url
-        ] ) ;
-        $result = ( array ) json_decode( curl_exec( $ch ) , true ) ;
-        curl_close( $ch );
-        return $result + [ 'url' => $url ] ;
+    public function file_get_contents( string $method , string $url , array $query = [ ] ) : array {
+        $options = array(
+            'http' => array(
+                'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+                'method'  => strtoupper( $method ) ,
+                'content' => http_build_query( $query )
+            )
+        );
+        $result = file_get_contents( \App\Support\Url::build( $url , $query ) , false, stream_context_create( $options ) ) ;
+        try {
+            $respone = ( array ) json_decode( $result , true ) ;
+            return $respone ;
+        } catch ( \Throwable $th ) {
+            return [
+                ( string ) $th -> getMessage( )  ,
+                $th -> getTrace( )  ,
+                ( string ) $th ,
+            ]  ;
+        }
     }
 
-    public function Client( string $url , array $query = [ ] ) : array {
+    public function curl( string $method , string $url , array $query = [ ] ) : array {
+        $ch = Curl::new( )
+            -> url    ( $url    )
+            -> query  ( $query  )
+            -> method ( $method )
+            -> data   ( $query  )
+            -> send   (         )
+            -> content
+        ;
+        return ( array ) json_decode( $ch  , true ) ;
+    }
+
+    public function Client( string $method , string $url , array $query = [ ] ) : array {
         try{   
-            $response = ( new Client( ) ) -> request( 'GET' , $url , [ 'query' => $query ,
-            'on_stats' => function (TransferStats $stats) use (&$url) {
-                $url = $stats->getEffectiveUri();
-            } ] ) ;
+            $response = ( new Client( ) ) -> request( strtoupper( $method ) , $url , [ 'query' => $query ] ) ;
         } catch ( ConnectException $th) {
-            return [$th]  ;
+            return [
+                ( string ) $th -> getMessage( )  ,
+                $th -> getTrace( )  ,
+                ( string ) $th ,
+            ]  ;
         }
-        return ( array ) json_decode( $response -> getBody( ) -> getContents( ) , true ) + [ 'url' => $url ] ;
+        return ( array ) json_decode( $response -> getBody( ) -> getContents( ) , true ) ;
     }
 
-    public function HttpClient( string $url , array $query = [ ] ) : array {
-        try{   
-            $response = HttpClient::create( [ 'max_redirects' => 3 ] ) -> request( 'GET' , $url , [ 'query' => $query ] ) ;
-            return $response -> toArray( ) + [ 'url' => $response->getInfo()['url'] ] ;
-        } catch ( TransportException $th) {
-            return [$th]  ;
+    public function HttpClient( string $method , string $url , array $query = [ ] ) : array {
+        try {   
+            return HttpClient::create( [ 'max_redirects' => 3 ] ) -> request( strtoupper( $method ) , $url , [ 'query' => $query ] ) -> toArray( ) ;
+        } catch ( TransportException $th ) {
+            return [
+                ( string ) $th -> getMessage( )  ,
+                $th -> getTrace( )  ,
+                ( string ) $th ,
+            ]  ;
+        } catch ( \Symfony\Component\HttpClient\Exception\JsonException $th ) {
+            return [
+                ( string ) $th -> getMessage( )  ,
+                $th -> getTrace( )  ,
+                ( string ) $th ,
+            ]  ;
         }
     }
 
