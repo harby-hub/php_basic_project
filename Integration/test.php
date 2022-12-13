@@ -5,7 +5,5 @@ class mine {
 }
 
 class test{
-
     public function __construct( public mine $mine = new mine ) { }
-
 }
