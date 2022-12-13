@@ -1,4 +1,4 @@
-<?php namespace App\Router;
+<?php namespace App\Support\Router;
 
 #[ \Attribute( \Attribute::TARGET_METHOD ) ]
 class Route {

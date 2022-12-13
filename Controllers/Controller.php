@@ -1,6 +1,6 @@
 <?php namespace App\Controllers;
 
-use App\Router\Route;
+use App\Support\Router\Route;
 use App\Integration\{Wrapper,test};
 use App\Inject\{Parameters,Agreements};
 

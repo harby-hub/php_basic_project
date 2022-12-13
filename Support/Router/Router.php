@@ -1,4 +1,4 @@
-<?php namespace App\Router;
+<?php namespace App\Support\Router;
 
 use App\Inject\{Parameters,Agreements};
 
