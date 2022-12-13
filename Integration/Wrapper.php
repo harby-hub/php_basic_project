@@ -1,64 +1,72 @@
 <?php namespace App\Integration ;
 
+use GuzzleHttp\Client;
 use App\Inject\Parameters;
+use GuzzleHttp\TransferStats;
+use GuzzleHttp\Exception\ConnectException;
+use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\HttpClient\Exception\TransportException;
+
 
 class slave {
     public array $data = [ 1 , 2 , 3 ] ;
 }
+
+// http://localhost:800/api/Cities/?id%5B0%5D=1&id%5B1%5D=2&first=2
+// http://localhost:800/api/Cities?id%5B0%5D=1&id%5B1%5D=2&first=2
 
 #[ Parameters( [ 'slave' => slave::class ] ) ]
 class Wrapper{
 
     public slave $slave ;
 
-    public function response( ) : array {
-
-        $BASE_URL = 'https://api.flickr.com/services';
-        $PHOTO_URL = 'https://live.staticflickr.com/%s/%s_%s_b.jpg';
-        $PHOTOS_DIR = 'photos';
-
-        $apiKey=$_ENV['API_KEY'];
-
-        $opts = [
-            'https' => [
-                'max_redirects' => 3,
-            ],
-        ];
-        $queryString = http_build_query([
-            'api_key' => $apiKey,
-            'content_type' => 1,
-            'format' => 'php_serial',
-            'media' => 'photos',
-            'method' => 'flickr.photos.search',
-            'per_page' => 10,
-            'safe_search' => 1,
-            'text' => 'Kakadu National Park'
-        ]);
-        $requestUri = sprintf(
-            '%s/rest/?%s',
-            $BASE_URL,
-            $queryString
-        );
-        $fp = fopen($requestUri, 'r');
-
-        $photoData = unserialize(stream_get_contents($fp));
-
-        foreach ($photoData['photos']['photo'] as $photoDatum) {
-            printf("Downloading %s.jpg\n", $photoDatum['title']);
-            $photoFile = file_get_contents(
-                sprintf(
-                    $PHOTO_URL,
-                    $photoDatum['server'],
-                    $photoDatum['id'],
-                    $photoDatum['secret']
-                )
-            );
-            file_put_contents($PHOTOS_DIR . '/' . $photoDatum['title'] . '.jpg', $photoFile);
-            $array[ ] = $photoDatum['title'] ;
+    public function fopen( string $url , array $query = [ ] ) : array {
+        $url = sprintf( '%s?%s', $url , http_build_query( $query ) ) ;
+        $fp = fopen( $url , 'r' );
+        try {
+            $respone = ( array ) json_decode( stream_get_contents( $fp ) , true ) ;
+            fclose( $fp ) ;
+            return $respone + [ 'url' => $url ] ;;
+        } catch (\Throwable $th) {
+            return [$th]  ;
+        } finally {
         }
+    }
 
-        fclose($fp);
-        return $array ;
+    public function curl( string $url , array $query = [ ] ) : array {
+        $url = sprintf( '%s?%s', $url , http_build_query( $query ) ) ;
+        $ch = curl_init( ) ;
+        curl_setopt( $ch , CURLOPT_RETURNTRANSFER  , true ) ;
+        curl_setopt( $ch , CURLOPT_URL             , $url ) ;
+        curl_setopt( $ch , CURLOPT_SSH_COMPRESSION , true ) ;
+        curl_setopt_array( $ch , [
+            CURLOPT_RETURNTRANSFER => true ,
+            CURLOPT_URL            => $url
+        ] ) ;
+        $result = ( array ) json_decode( curl_exec( $ch ) , true ) ;
+        curl_close( $ch );
+        return $result + [ 'url' => $url ] ;
+    }
+
+    public function Client( string $url , array $query = [ ] ) : array {
+        try{   
+            $response = ( new Client( ) ) -> request( 'GET' , $url , [ 'query' => $query ,
+            'on_stats' => function (TransferStats $stats) use (&$url) {
+                $url = $stats->getEffectiveUri();
+            } ] ) ;
+        } catch ( ConnectException $th) {
+            return [$th]  ;
+        }
+        return ( array ) json_decode( $response -> getBody( ) -> getContents( ) , true ) + [ 'url' => $url ] ;
+    }
+
+    public function HttpClient( string $url , array $query = [ ] ) : array {
+        try{   
+            $response = HttpClient::create( [ 'max_redirects' => 3 ] ) -> request( 'GET' , $url , [ 'query' => $query ] ) ;
+            return $response -> toArray( ) + [ 'url' => $response->getInfo()['url'] ] ;
+        } catch ( TransportException $th) {
+            return [$th]  ;
+        }
     }
 
 }
