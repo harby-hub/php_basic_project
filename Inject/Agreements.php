@@ -1,8 +1,7 @@
 <?php namespace App\Inject;
 
-#[ \Attribute( ) ]
-
-class inject {
+#[ \Attribute( \Attribute::TARGET_METHOD ) ]
+class Agreements {
 
     public function __construct( private array $classes ) { }
 

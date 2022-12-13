@@ -1,9 +1,9 @@
 {
-    "name" : "harby/php_basic_project",
-    "type" : "project",
-    "description": "php project.",
-    "keywords": ["php"],
-    "license": "MIT",
+    "name"        : "harby/php_basic_project" ,
+    "type"        : "project"                 ,
+    "description" : "php project."            ,
+    "license"     : "MIT"                     ,
+    "keywords"    : [ "php" ]                 ,
     "autoload": {
         "psr-4": {
             "App\\": "."

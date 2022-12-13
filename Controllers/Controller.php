@@ -1,12 +1,11 @@
 <?php namespace App\Controllers;
 
 use App\Router\Route;
-use App\Inject\inject;
 use App\Integration\Wrapper;
-use App\Inject\Parameters;
+use App\Inject\{Parameters,Agreements};
 use App\Integration\test;
 
-#[ inject( [ 'Wrapper' => Wrapper::class ] ) ]
+#[ Parameters( [ 'Wrapper' => Wrapper::class ] ) ]
 class Controller {
 
     public Wrapper $Wrapper ;
@@ -19,10 +18,10 @@ class Controller {
     ] ; }
 
     #[
-        inject( [ 'test' => test::class ] ) ,
+        Agreements( [ 'test' => test::class ] ) ,
         Route( '/article/{slug}/comment/{id<\d+>}' , name: 'article-comment' )
     ]
-    public function comment( string $slug , int $id , test $test ) : array { return [
+    public function comment( test $test , int $id , string $slug ) : array { return [
         'url'     => '/article/{slug}/comment/{id<\d+>}' ,
         'slug'    => $slug                               ,
         'id'      => $id                                 ,
