@@ -21,26 +21,32 @@ class Controller {
         Route( '/article/{slug}/comment/{id<\d+>}' , name: 'article-comment' )
     ]
     public function comment( test $test , int $id , string $slug ) : array {
-        $array = [ 
-            'id'    => [ 1 , 2 ] ,
-            'first' =>   2
-        ];
-        $url = 'https://jsonplaceholder.typicode.com/todos/1' ;
-        $url = 'http://localhost:800/api/v1/test' ;
-        $method = 'get' ;
         return [
-            'url'               => '/article/{slug}/comment/{id<\d+>}'                               ,
-            'slug'              => $slug                                                             ,
-            'id'                => $id                                                               ,
-            'test'              => $test                                                             ,
-            'mine'              => $test -> mine                                                     ,
-            'Wrapper'           => $this -> Wrapper                                                  ,
+            'url'     => '/article/{slug}/comment/{id<\d+>}' ,
+            'slug'    => $slug                               ,
+            'id'      => $id                                 ,
+            'test'    => $test                               ,
+            'mine'    => $test -> mine                       ,
+            'Wrapper' => $this -> Wrapper                    ,
+            'ENV'     => $_ENV                               ,
+        ] ;
+    }
+
+    #[
+        Agreements( [ 'test' => test::class ] ) ,
+        Route( '/test' , name: 'test' )
+    ]
+    public function test( test $test ) : array {
+        $array  = [ 'id' => [ 1 , 2 ] , 'first' => 2 ]             ;
+        $url    =   'https://jsonplaceholder.typicode.com/todos/1' ;
+        $url    =   'http://localhost:800/api/v1/test'             ;
+        $method =   'get'                                          ;
+        return [
             'file_get_contents' => $this -> Wrapper -> file_get_contents ( $method , $url , $array ) ,
             'fopen'             => $this -> Wrapper -> fopen             ( $method , $url , $array ) ,
             'curl'              => $this -> Wrapper -> curl              ( $method , $url , $array ) ,
             'Client'            => $this -> Wrapper -> Client            ( $method , $url , $array ) ,
             'HttpClient'        => $this -> Wrapper -> HttpClient        ( $method , $url , $array ) ,
-            'ENV'               => $_ENV                               ,
         ] ;
     }
 }
