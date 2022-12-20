@@ -21,7 +21,7 @@ class Wrapper{
     public function fopen( string $method , string $url , array $query = [ ] ) : array {
         $options = array(
             'http' => array(
-                'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+                'header'  => "Content-type: application/x-www-form-urlencoded\r\n" . "user-agent: test-agent\r\n" ,
                 'method'  => strtoupper( $method ) ,
                 'content' => http_build_query( $query )
             )
@@ -44,7 +44,7 @@ class Wrapper{
     public function file_get_contents( string $method , string $url , array $query = [ ] ) : array {
         $options = array(
             'http' => array(
-                'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+                'header'  => "Content-type: application/x-www-form-urlencoded\r\n" . "user-agent: mahmoud\r\n" ,
                 'method'  => strtoupper( $method ) ,
                 'content' => http_build_query( $query )
             )
@@ -76,7 +76,7 @@ class Wrapper{
 
     public function Client( string $method , string $url , array $query = [ ] ) : array {
         try{   
-            $response = ( new Client( ) ) -> request( strtoupper( $method ) , $url , [ 'query' => $query ] ) ;
+            $response = ( new Client( ) ) -> request( strtoupper( $method ) , $url , [ 'query' => $query , 'headers' => [ "user-agent" => "test-agent" ] ] ) ;
         } catch ( ConnectException $th) {
             return [
                 ( string ) $th -> getMessage( )  ,
@@ -89,7 +89,7 @@ class Wrapper{
 
     public function HttpClient( string $method , string $url , array $query = [ ] ) : array {
         try {   
-            return HttpClient::create( [ 'max_redirects' => 3 ] ) -> request( strtoupper( $method ) , $url , [ 'query' => $query ] ) -> toArray( ) ;
+            return HttpClient::create( [ 'max_redirects' => 3 ] ) -> request( strtoupper( $method ) , $url , [ 'query' => $query , 'headers' => [ "user-agent" => "test-agent" ] ] ) -> toArray( ) ;
         } catch ( TransportException $th ) {
             return [
                 ( string ) $th -> getMessage( )  ,
